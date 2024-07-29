@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"maxpothier.com/go/api/api"
+)
 
 func main() {
-	fmt.Println("Hello, World!")
+	api.GetRate("ETH")
 }

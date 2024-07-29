@@ -1,3 +1,3 @@
-module maxpothier.com/go/io
+module maxpothier.com/go/api
 
 go 1.19

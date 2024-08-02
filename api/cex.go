@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,25 +13,33 @@ import (
 const apiURL = "https://cex.io/api/ticker/%s/USD"
 
 func GetRate(currency string) (*model.Rate, error) {
+	if len(currency) != 3 {
+		return nil, fmt.Errorf("currency code must be 3 characters, recieved %s", currency)
+	}
 	upCurrency := strings.ToUpper(currency)
-	response, err := http.Get(fmt.Sprintf(apiURL, upCurrency))
+	res, err := http.Get(fmt.Sprintf(apiURL, upCurrency))
+	var response CexResponse
 
 	if err != nil {
 		return nil, err
 	}
-	if response.StatusCode == http.StatusOK {
-		bodyBytes, err := io.ReadAll(response.Body)
+	if res.StatusCode == http.StatusOK {
+		bodyBytes, err := io.ReadAll(res.Body)
 		if err != nil {
 			return nil, err
 		}
-		jsonString := string(bodyBytes)
-		fmt.Println(jsonString)
+		
+		err = json.Unmarshal(bodyBytes, &response)
+		if err != nil {
+			return nil, err
+		}
+
+
 	} else {
-		return nil, fmt.Errorf("API returned status code %d", response.StatusCode)
+		return nil, fmt.Errorf("API returned status code %d", res.StatusCode)
 	}
 
-	rate := model.Rate{Currency: currency, Price: 0.0}
-	fmt.Println(rate)
+	rate := model.Rate{Currency: currency, Price: response.Ask}
 
 	return &rate, nil
 }

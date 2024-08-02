@@ -1,32 +1,39 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"sync"
+	"net/http"
+	"strings"
 
 	"maxpothier.com/go/api/api"
+	"maxpothier.com/go/api/model"
 )
 
-func main() {
-	currencies := []string{"BTC", "ETH", "LTC"}
-	var wg sync.WaitGroup
-	for _, currency := range currencies {
-		wg.Add(1)
-		go func (currencyCode string) {
-			getCurrencyData(currencyCode)
-			wg.Done()
-		}(currency)
+func getRate(w http.ResponseWriter, r *http.Request) {
+	currency := r.URL.Query().Get("currency")
+	upperCurrency := strings.ToUpper(currency)
+	rate, err := api.GetRate(upperCurrency)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
-	wg.Wait()
 
+	response := model.RateResponse{
+		Currency: rate.Currency,
+		Price:	rate.Price,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
-func getCurrencyData(currency string) {
-	rate, err := api.GetRate(currency)
+func main() {
+	server := http.NewServeMux()
+	server.HandleFunc("/rate", getRate)
 
+	err := http.ListenAndServe(":8080", server)
 	if err != nil {
-		panic(err)
+		fmt.Println("Error starting server: ", err)
 	}
-
-	fmt.Println("The rate for", rate.Currency, "is", rate.Price)
 }
